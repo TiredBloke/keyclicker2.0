@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fidget Key Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            min-height: 100vh;
+            background: linear-gradient(to bottom right, #0f172a, #581c87, #0f172a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .content-wrapper {
+            max-width: 42rem;
+            width: 100%;
+        }
+        
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .trophy-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .game-area {
+            position: relative;
+            height: 24rem;
+        }
+        
+        .game-over-panel {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .game-over-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .game-over-emoji {
+            font-size: 3.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .game-over-title {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        
+        .game-over-score {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+        }
+        
+        .key-button {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.1s;
+            background: none;
+            border: none;
+            outline: none;
+        }
+        
+        .key-button:focus {
+            outline: none;
+        }
+        
+        .key-shadow {
+            position: absolute;
+            inset: 0;
+            border-radius: 0.75rem;
+            filter: blur(16px);
+            opacity: 0.5;
+        }
+        
+        .key-body {
+            position: relative;
+        }
+        
+        .key-top {
+            width: 6rem;
+            height: 6rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            font-size: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        
+        .key-side {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            height: 1rem;
+            border-radius: 0 0 0.75rem 0.75rem;
+            filter: brightness(0.6);
+            transform: perspective(100px) rotateX(-45deg);
+            transform-origin: top;
+        }
+        
+        .key-glow {
+            position: absolute;
+            inset: 0;
+            border-radius: 0.75rem;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        
+        .reset-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+            backdrop-filter: blur(16px);
+            font-size: 1rem;
+            margin: 0 auto;
+        }
+        
+        .reset-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+        
+        .attempts-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.875rem;
+        }
+        
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        
+        .ripple {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 4px solid;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Trophy = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                <path d="M4 22h16"></path>
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+            </svg>
+        );
+
+        const RotateCcw = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+            </svg>
+        );
+
+        const storage = {
+            get: async (key) => {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value, shared: false } : null;
+                } catch (error) {
+                    return null;
+                }
+            },
+            set: async (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                    return { key, value, shared: false };
+                } catch (error) {
+                    return null;
+                }
+            }
+        };
+
+        const KeyFidgetGame = () => {
+            const [score, setScore] = useState(0);
+            const [highScore, setHighScore] = useState(0);
+            const [attempts, setAttempts] = useState(0);
+            const [keyColor, setKeyColor] = useState('#4A90E2');
+            const [isPressed, setIsPressed] = useState(false);
+            const [particles, setParticles] = useState([]);
+            const [ripples, setRipples] = useState([]);
+            const [lives, setLives] = useState(3);
+            const [timeLeft, setTimeLeft] = useState(5);
+            const [keyPosition, setKeyPosition] = useState({ x: 50, y: 50 });
+            const [keyVelocity, setKeyVelocity] = useState({ 
+                vx: (Math.random() - 0.5) * 0.5, 
+                vy: (Math.random() - 0.5) * 0.5 
+            });
+            const [gameOver, setGameOver] = useState(false);
+            const [moveSpeed, setMoveSpeed] = useState(1);
+            const audioContextRef = useRef(null);
+            const particleIdRef = useRef(0);
+            const rippleIdRef = useRef(0);
+            const timerRef = useRef(null);
+            const boundsRef = useRef({ minX: 5, maxX: 95, minY: 5, maxY: 95 });
+
+            const colors = [
+                '#4A90E2', '#E94B3C', '#6BCB77', '#FFD93D', '#9B59B6',
+                '#FF6B9D', '#4ECDC4', '#F39C12', '#3498DB', '#E74C3C'
+            ];
+
+            useEffect(() => {
+                const loadData = async () => {
+                    try {
+                        const hsResult = await storage.get('fidget-highscore');
+                        const attemptsResult = await storage.get('fidget-attempts');
+                        
+                        if (hsResult && hsResult.value) {
+                            setHighScore(parseInt(hsResult.value));
+                        }
+                        if (attemptsResult && attemptsResult.value) {
+                            setAttempts(parseInt(attemptsResult.value));
+                        }
+                    } catch (error) {
+                        console.log('No saved data yet');
+                    }
+                };
+                loadData();
+            }, []);
+
+            useEffect(() => {
+                if (gameOver || lives === 0) return;
+
+                timerRef.current = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev <= 0.1) {
+                            const newLives = lives - 1;
+                            setLives(newLives);
+                            
+                            if (newLives === 0) {
+                                playExplosionSound();
+                                setGameOver(true);
+                            } else {
+                                playLoseLifeSound();
+                            }
+                            
+                            return 5;
+                        }
+                        return prev - 0.1;
+                    });
+                }, 100);
+
+                return () => clearInterval(timerRef.current);
+            }, [lives, gameOver]);
+
+            useEffect(() => {
+                if (gameOver) return;
+
+                const animate = () => {
+                    setKeyPosition(prev => {
+                        let newX = prev.x;
+                        let newY = prev.y;
+                        
+                        setKeyVelocity(vel => {
+                            let newVx = vel.vx;
+                            let newVy = vel.vy;
+                            
+                            newX = prev.x + newVx * moveSpeed;
+                            newY = prev.y + newVy * moveSpeed;
+                            
+                            if (newX <= boundsRef.current.minX || newX >= boundsRef.current.maxX) {
+                                newVx = -newVx;
+                                newX = Math.max(boundsRef.current.minX, Math.min(boundsRef.current.maxX, newX));
+                            }
+                            
+                            if (newY <= boundsRef.current.minY || newY >= boundsRef.current.maxY) {
+                                newVy = -newVy;
+                                newY = Math.max(boundsRef.current.minY, Math.min(boundsRef.current.maxY, newY));
+                            }
+                            
+                            return { vx: newVx, vy: newVy };
+                        });
+                        
+                        return { x: newX, y: newY };
+                    });
+                };
+
+                const interval = setInterval(animate, 16);
+                return () => clearInterval(interval);
+            }, [moveSpeed, gameOver]);
+
+            const playClickSound = () => {
+                if (!audioContextRef.current) {
+                    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const ctx = audioContextRef.current;
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + 0.1);
+            };
+
+            const playExplosionSound = () => {
+                if (!audioContextRef.current) {
+                    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const ctx = audioContextRef.current;
+                const duration = 0.8;
+                
+                const bufferSize = ctx.sampleRate * duration;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const oscillator = ctx.createOscillator();
+                oscillator.frequency.value = 50;
+                oscillator.type = 'sine';
+                
+                const noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.value = 1000;
+                
+                const noiseGain = ctx.createGain();
+                const oscGain = ctx.createGain();
+                
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                
+                oscillator.connect(oscGain);
+                oscGain.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                noiseGain.gain.setValueAtTime(0.5, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+                
+                oscGain.gain.setValueAtTime(0.3, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration * 0.5);
+                
+                oscillator.frequency.setValueAtTime(100, now);
+                oscillator.frequency.exponentialRampToValueAtTime(30, now + duration * 0.3);
+                
+                noise.start(now);
+                oscillator.start(now);
+                noise.stop(now + duration);
+                oscillator.stop(now + duration);
+            };
+
+            const playLoseLifeSound = () => {
+                if (!audioContextRef.current) {
+                    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const ctx = audioContextRef.current;
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                oscillator.frequency.setValueAtTime(600, now);
+                oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.3);
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.3);
+            };
+
+            const createParticles = (x, y) => {
+                const newParticles = [];
+                const particleCount = Math.floor(Math.random() * 8) + 12;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (Math.PI * 2 * i) / particleCount;
+                    const velocity = Math.random() * 3 + 2;
+                    const size = Math.random() * 8 + 4;
+                    
+                    newParticles.push({
+                        id: particleIdRef.current++,
+                        x,
+                        y,
+                        vx: Math.cos(angle) * velocity,
+                        vy: Math.sin(angle) * velocity,
+                        size,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        life: 1
+                    });
+                }
+                
+                setParticles(prev => [...prev, ...newParticles]);
+            };
+
+            const createRipple = (x, y) => {
+                setRipples(prev => [...prev, {
+                    id: rippleIdRef.current++,
+                    x,
+                    y,
+                    scale: 0
+                }]);
+            };
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setParticles(prev => 
+                        prev
+                            .map(p => ({
+                                ...p,
+                                x: p.x + p.vx,
+                                y: p.y + p.vy,
+                                vy: p.vy + 0.2,
+                                life: p.life - 0.02
+                            }))
+                            .filter(p => p.life > 0)
+                    );
+                    
+                    setRipples(prev => 
+                        prev
+                            .map(r => ({ ...r, scale: r.scale + 0.08 }))
+                            .filter(r => r.scale < 2)
+                    );
+                }, 16);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            const handleKeyClick = (e) => {
+                if (gameOver) return;
+
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+
+                playClickSound();
+                setIsPressed(true);
+                setTimeout(() => setIsPressed(false), 100);
+                
+                const newScore = score + 1;
+                setScore(newScore);
+                
+                const newColor = colors[Math.floor(Math.random() * colors.length)];
+                setKeyColor(newColor);
+                
+                createParticles(x, y);
+                createRipple(x, y);
+                
+                setTimeLeft(5);
+                setMoveSpeed(prev => prev * 1.02);
+                
+                setKeyVelocity(vel => {
+                    const impulseAngle = Math.random() * Math.PI * 2;
+                    const impulseStrength = 0.3 + Math.random() * 0.4;
+                    
+                    return {
+                        vx: vel.vx + Math.cos(impulseAngle) * impulseStrength,
+                        vy: vel.vy + Math.sin(impulseAngle) * impulseStrength
+                    };
+                });
+            };
+
+            const resetGame = async () => {
+                if (score > highScore) {
+                    setHighScore(score);
+                    await storage.set('fidget-highscore', score.toString());
+                }
+                
+                const newAttempts = attempts + 1;
+                setAttempts(newAttempts);
+                await storage.set('fidget-attempts', newAttempts.toString());
+                
+                setScore(0);
+                setKeyColor(colors[0]);
+                setLives(3);
+                setTimeLeft(5);
+                setGameOver(false);
+                setMoveSpeed(1);
+                setKeyPosition({ x: 50, y: 50 });
+                setKeyVelocity({ 
+                    vx: (Math.random() - 0.5) * 0.5, 
+                    vy: (Math.random() - 0.5) * 0.5 
+                });
+            };
+
+            const getEmoji = () => {
+                const progress = timeLeft / 5;
+                
+                if (progress > 0.8) return '😄';
+                if (progress > 0.6) return '🙂';
+                if (progress > 0.4) return '😐';
+                if (progress > 0.2) return '😟';
+                return '😢';
+            };
+
+            const getTimerColor = () => {
+                if (timeLeft > 3) return '#4ade80';
+                if (timeLeft > 1.5) return '#fbbf24';
+                return '#f87171';
+            };
+
+            return (
+                <div className="game-container">
+                    {particles.map(p => (
+                        <div
+                            key={p.id}
+                            className="particle"
+                            style={{
+                                left: p.x,
+                                top: p.y,
+                                width: p.size,
+                                height: p.size,
+                                backgroundColor: p.color,
+                                opacity: p.life,
+                                transform: 'translate(-50%, -50%)',
+                                boxShadow: `0 0 ${p.size * 2}px ${p.color}`
+                            }}
+                        />
+                    ))}
+
+                    {ripples.map(r => (
+                        <div
+                            key={r.id}
+                            className="ripple"
+                            style={{
+                                left: r.x,
+                                top: r.y,
+                                width: 100,
+                                height: 100,
+                                borderColor: keyColor,
+                                opacity: 1 - r.scale / 2,
+                                transform: `translate(-50%, -50%) scale(${r.scale})`,
+                            }}
+                        />
+                    ))}
+
+                    <div className="content-wrapper">
+                        <div className="stats-panel">
+                            <div className="stats-grid">
+                                <div>
+                                    <div className="stat-value" style={{color: 'white'}}>{score}</div>
+                                    <div className="stat-label">Score</div>
+                                </div>
+                                <div>
+                                    <div className="stat-value trophy-icon" style={{color: '#fbbf24'}}>
+                                        <Trophy size={24} />
+                                        {highScore}
+                                    </div>
+                                    <div className="stat-label">High Score</div>
+                                </div>
+                                <div>
+                                    <div className="stat-value" style={{color: '#f87171'}}>
+                                        {'❤️'.repeat(lives)}
+                                    </div>
+                                    <div className="stat-label">Lives</div>
+                                </div>
+                                <div>
+                                    <div className="stat-value" style={{color: getTimerColor()}}>
+                                        {timeLeft.toFixed(1)}s
+                                    </div>
+                                    <div className="stat-label">Time</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="game-area">
+                            {gameOver && (
+                                <div className="game-over-panel">
+                                    <div className="game-over-content">
+                                        <div className="game-over-emoji">💀</div>
+                                        <div className="game-over-title">Game Over!</div>
+                                        <div className="game-over-score">Final Score: {score}</div>
+                                        <button onClick={resetGame} className="reset-button">
+                                            <RotateCcw size={20} />
+                                            New Attempt
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!gameOver && (
+                                <button
+                                    onClick={handleKeyClick}
+                                    className="key-button"
+                                    style={{
+                                        left: `${keyPosition.x}%`,
+                                        top: `${keyPosition.y}%`,
+                                        transform: `translate(-50%, -50%) ${isPressed ? 'translateY(4px)' : 'translateY(0)'}`,
+                                    }}
+                                >
+                                    <div 
+                                        className="key-shadow"
+                                        style={{
+                                            backgroundColor: keyColor,
+                                            transform: 'translateY(10px) scale(0.9)',
+                                        }}
+                                    />
+                                    
+                                    <div className="key-body">
+                                        <div
+                                            className="key-top"
+                                            style={{
+                                                backgroundColor: keyColor,
+                                                boxShadow: `
+                                                    inset 0 -4px 8px rgba(0,0,0,0.3),
+                                                    inset 0 4px 8px rgba(255,255,255,0.2),
+                                                    0 ${isPressed ? '2px' : '6px'} 16px rgba(0,0,0,0.5)
+                                                `,
+                                                transform: isPressed ? 'translateY(2px)' : 'translateY(0)',
+                                            }}
+                                        >
+                                            {getEmoji()}
+                                        </div>
+                                        
+                                        {!isPressed && (
+                                            <div
+                                                className="key-side"
+                                                style={{
+                                                    backgroundColor: keyColor,
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                    
+                                    <div 
+                                        className="key-glow"
+                                        style={{
+                                            boxShadow: `0 0 30px ${keyColor}`,
+                                        }}
+                                    />
+                                </button>
+                            )}
+                        </div>
+
+                        {!gameOver && (
+                            <div>
+                                <p className="instructions">
+                                    Click the floating key before time runs out!
+                                </p>
+                                <p className="attempts-text">
+                                    Attempts: {attempts}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(<KeyFidgetGame />);
+    </script>
+</body>
+</html>
