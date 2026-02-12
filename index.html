@@ -280,6 +280,29 @@
             const rippleIdRef = useRef(0);
             const timerRef = useRef(null);
             const boundsRef = useRef({ minX: 5, maxX: 95, minY: 5, maxY: 95 });
+            
+            // Audio file references (place sound files in same folder as HTML)
+            const clickSoundRef = useRef(null);
+            const loseLifeSoundRef = useRef(null);
+            const explosionSoundRef = useRef(null);
+            
+            // Initialize audio files
+            useEffect(() => {
+                // Try to load custom sound files
+                clickSoundRef.current = new Audio();
+                loseLifeSoundRef.current = new Audio();
+                explosionSoundRef.current = new Audio();
+                
+                // Load the actual sound files
+                clickSoundRef.current.src = 'keyboard-click.mp3';
+                loseLifeSoundRef.current.src = 'fail.mp3';
+                explosionSoundRef.current.src = 'boom.mp3';
+                
+                // Set volume
+                clickSoundRef.current.volume = 0.5;
+                loseLifeSoundRef.current.volume = 0.6;
+                explosionSoundRef.current.volume = 0.7;
+            }, []);
 
             const colors = [
                 '#4A90E2', '#E94B3C', '#6BCB77', '#FFD93D', '#9B59B6',
@@ -367,6 +390,19 @@
             }, [moveSpeed, gameOver]);
 
             const playClickSound = () => {
+                // Try to play custom sound file first
+                if (clickSoundRef.current && clickSoundRef.current.src) {
+                    clickSoundRef.current.currentTime = 0;
+                    clickSoundRef.current.play().catch(() => {
+                        // If custom sound fails, use generated sound
+                        playGeneratedClickSound();
+                    });
+                } else {
+                    playGeneratedClickSound();
+                }
+            };
+            
+            const playGeneratedClickSound = () => {
                 if (!audioContextRef.current) {
                     audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -389,6 +425,19 @@
             };
 
             const playExplosionSound = () => {
+                // Try to play custom sound file first
+                if (explosionSoundRef.current && explosionSoundRef.current.src) {
+                    explosionSoundRef.current.currentTime = 0;
+                    explosionSoundRef.current.play().catch(() => {
+                        // If custom sound fails, use generated sound
+                        playGeneratedExplosionSound();
+                    });
+                } else {
+                    playGeneratedExplosionSound();
+                }
+            };
+            
+            const playGeneratedExplosionSound = () => {
                 if (!audioContextRef.current) {
                     audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -442,6 +491,19 @@
             };
 
             const playLoseLifeSound = () => {
+                // Try to play custom sound file first
+                if (loseLifeSoundRef.current && loseLifeSoundRef.current.src) {
+                    loseLifeSoundRef.current.currentTime = 0;
+                    loseLifeSoundRef.current.play().catch(() => {
+                        // If custom sound fails, use generated sound
+                        playGeneratedLoseLifeSound();
+                    });
+                } else {
+                    playGeneratedLoseLifeSound();
+                }
+            };
+            
+            const playGeneratedLoseLifeSound = () => {
                 if (!audioContextRef.current) {
                     audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
                 }
