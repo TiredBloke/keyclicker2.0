@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fidget Key Game v2.0</title>
+    <title>Fidget Key Game v2.1</title>
     <style>
         * {
             margin: 0;
@@ -270,8 +270,8 @@
             const [timeLeft, setTimeLeft] = useState(5);
             const [keyPosition, setKeyPosition] = useState({ x: 50, y: 50 });
             const [keyVelocity, setKeyVelocity] = useState({ 
-                vx: (Math.random() - 0.5) * 0.5, 
-                vy: (Math.random() - 0.5) * 0.5 
+                vx: (Math.random() - 0.5) * 2, 
+                vy: (Math.random() - 0.5) * 2 
             });
             const [gameOver, setGameOver] = useState(false);
             const [moveSpeed, setMoveSpeed] = useState(1);
@@ -636,8 +636,8 @@
                 setMoveSpeed(1);
                 setKeyPosition({ x: 50, y: 50 });
                 setKeyVelocity({ 
-                    vx: (Math.random() - 0.5) * 0.5, 
-                    vy: (Math.random() - 0.5) * 0.5 
+                    vx: (Math.random() - 0.5) * 2, 
+                    vy: (Math.random() - 0.5) * 2 
                 });
             };
 
@@ -796,7 +796,7 @@
                                     Click the floating key before time runs out!
                                 </p>
                                 <p className="attempts-text">
-                                    Attempts: {attempts} | v2.0
+                                    Attempts: {attempts} | v2.1
                                 </p>
                             </div>
                         )}
