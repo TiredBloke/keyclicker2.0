@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fidget Key Game v2.1</title>
+    <title>Fidget Key Game v2.2 DEBUG</title>
     <style>
         * {
             margin: 0;
@@ -356,6 +356,9 @@
             useEffect(() => {
                 if (gameOver) return;
 
+                console.log('Physics animation starting. Initial velocity:', keyVelocity);
+                console.log('Initial position:', keyPosition);
+
                 const animate = () => {
                     setKeyPosition(prev => {
                         let newX = prev.x;
@@ -371,11 +374,13 @@
                             if (newX <= boundsRef.current.minX || newX >= boundsRef.current.maxX) {
                                 newVx = -newVx;
                                 newX = Math.max(boundsRef.current.minX, Math.min(boundsRef.current.maxX, newX));
+                                console.log('Bounced horizontally!');
                             }
                             
                             if (newY <= boundsRef.current.minY || newY >= boundsRef.current.maxY) {
                                 newVy = -newVy;
                                 newY = Math.max(boundsRef.current.minY, Math.min(boundsRef.current.maxY, newY));
+                                console.log('Bounced vertically!');
                             }
                             
                             return { vx: newVx, vy: newVy };
@@ -386,7 +391,11 @@
                 };
 
                 const interval = setInterval(animate, 16);
-                return () => clearInterval(interval);
+                console.log('Animation interval started:', interval);
+                return () => {
+                    console.log('Animation interval cleared');
+                    clearInterval(interval);
+                };
             }, [moveSpeed, gameOver]);
 
             const playClickSound = () => {
@@ -796,7 +805,7 @@
                                     Click the floating key before time runs out!
                                 </p>
                                 <p className="attempts-text">
-                                    Attempts: {attempts} | v2.1
+                                    Attempts: {attempts} | v2.2 DEBUG
                                 </p>
                             </div>
                         )}
