@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fidget Key Game v2.2 DEBUG</title>
+    <title>Fidget Key Game v2.3</title>
     <style>
         * {
             margin: 0;
@@ -269,12 +269,16 @@
             const [lives, setLives] = useState(3);
             const [timeLeft, setTimeLeft] = useState(5);
             const [keyPosition, setKeyPosition] = useState({ x: 50, y: 50 });
-            const [keyVelocity, setKeyVelocity] = useState({ 
+            const [gameOver, setGameOver] = useState(false);
+            const [moveSpeed, setMoveSpeed] = useState(1);
+            
+            // Use refs for physics calculations
+            const positionRef = useRef({ x: 50, y: 50 });
+            const velocityRef = useRef({ 
                 vx: (Math.random() - 0.5) * 2, 
                 vy: (Math.random() - 0.5) * 2 
             });
-            const [gameOver, setGameOver] = useState(false);
-            const [moveSpeed, setMoveSpeed] = useState(1);
+            
             const audioContextRef = useRef(null);
             const particleIdRef = useRef(0);
             const rippleIdRef = useRef(0);
@@ -353,49 +357,39 @@
                 return () => clearInterval(timerRef.current);
             }, [lives, gameOver]);
 
+            // Physics animation using refs
             useEffect(() => {
                 if (gameOver) return;
 
-                console.log('Physics animation starting. Initial velocity:', keyVelocity);
-                console.log('Initial position:', keyPosition);
-
                 const animate = () => {
-                    setKeyPosition(prev => {
-                        let newX = prev.x;
-                        let newY = prev.y;
-                        
-                        setKeyVelocity(vel => {
-                            let newVx = vel.vx;
-                            let newVy = vel.vy;
-                            
-                            newX = prev.x + newVx * moveSpeed;
-                            newY = prev.y + newVy * moveSpeed;
-                            
-                            if (newX <= boundsRef.current.minX || newX >= boundsRef.current.maxX) {
-                                newVx = -newVx;
-                                newX = Math.max(boundsRef.current.minX, Math.min(boundsRef.current.maxX, newX));
-                                console.log('Bounced horizontally!');
-                            }
-                            
-                            if (newY <= boundsRef.current.minY || newY >= boundsRef.current.maxY) {
-                                newVy = -newVy;
-                                newY = Math.max(boundsRef.current.minY, Math.min(boundsRef.current.maxY, newY));
-                                console.log('Bounced vertically!');
-                            }
-                            
-                            return { vx: newVx, vy: newVy };
-                        });
-                        
-                        return { x: newX, y: newY };
-                    });
+                    // Update velocity and position using refs
+                    let newVx = velocityRef.current.vx;
+                    let newVy = velocityRef.current.vy;
+                    
+                    let newX = positionRef.current.x + newVx * moveSpeed;
+                    let newY = positionRef.current.y + newVy * moveSpeed;
+                    
+                    // Bounce off walls
+                    if (newX <= boundsRef.current.minX || newX >= boundsRef.current.maxX) {
+                        newVx = -newVx;
+                        newX = Math.max(boundsRef.current.minX, Math.min(boundsRef.current.maxX, newX));
+                    }
+                    
+                    if (newY <= boundsRef.current.minY || newY >= boundsRef.current.maxY) {
+                        newVy = -newVy;
+                        newY = Math.max(boundsRef.current.minY, Math.min(boundsRef.current.maxY, newY));
+                    }
+                    
+                    // Update refs
+                    velocityRef.current = { vx: newVx, vy: newVy };
+                    positionRef.current = { x: newX, y: newY };
+                    
+                    // Update state for rendering
+                    setKeyPosition({ x: newX, y: newY });
                 };
 
                 const interval = setInterval(animate, 16);
-                console.log('Animation interval started:', interval);
-                return () => {
-                    console.log('Animation interval cleared');
-                    clearInterval(interval);
-                };
+                return () => clearInterval(interval);
             }, [moveSpeed, gameOver]);
 
             const playClickSound = () => {
@@ -616,15 +610,14 @@
                 setTimeLeft(5);
                 setMoveSpeed(prev => prev * 1.02);
                 
-                setKeyVelocity(vel => {
-                    const impulseAngle = Math.random() * Math.PI * 2;
-                    const impulseStrength = 0.3 + Math.random() * 0.4;
-                    
-                    return {
-                        vx: vel.vx + Math.cos(impulseAngle) * impulseStrength,
-                        vy: vel.vy + Math.sin(impulseAngle) * impulseStrength
-                    };
-                });
+                // Add random velocity impulse using ref
+                const impulseAngle = Math.random() * Math.PI * 2;
+                const impulseStrength = 0.3 + Math.random() * 0.4;
+                
+                velocityRef.current = {
+                    vx: velocityRef.current.vx + Math.cos(impulseAngle) * impulseStrength,
+                    vy: velocityRef.current.vy + Math.sin(impulseAngle) * impulseStrength
+                };
             };
 
             const resetGame = async () => {
@@ -643,11 +636,14 @@
                 setTimeLeft(5);
                 setGameOver(false);
                 setMoveSpeed(1);
-                setKeyPosition({ x: 50, y: 50 });
-                setKeyVelocity({ 
+                
+                // Reset position and velocity
+                positionRef.current = { x: 50, y: 50 };
+                velocityRef.current = { 
                     vx: (Math.random() - 0.5) * 2, 
                     vy: (Math.random() - 0.5) * 2 
-                });
+                };
+                setKeyPosition({ x: 50, y: 50 });
             };
 
             const getEmoji = () => {
@@ -805,7 +801,7 @@
                                     Click the floating key before time runs out!
                                 </p>
                                 <p className="attempts-text">
-                                    Attempts: {attempts} | v2.2 DEBUG
+                                    Attempts: {attempts} | v2.3
                                 </p>
                             </div>
                         )}
